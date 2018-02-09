@@ -12,7 +12,8 @@ class SuperheroViewController: UIViewController, UICollectionViewDataSource, UIC
     
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     @IBOutlet weak var collectionView: UICollectionView!
-    var movies: [[String: Any]] = []
+    
+    var movies: [Movie] = []
     var refreshControl: UIRefreshControl!
     
     override func viewDidLoad() {
@@ -38,9 +39,19 @@ class SuperheroViewController: UIViewController, UICollectionViewDataSource, UIC
     
         
         // Do any additional setup after loading the view.
+        
+        
     
         collectionView.dataSource = self
         collectionView.delegate = self
+        
+        MovieAPIManager().nowPlayingMovies { (movies: [Movie]?, error: Error?) in
+            if let movies = movies {
+                self.movies = movies
+                self.collectionView.reloadData()
+            }
+        }
+        
         fetchMovies()
         
     }
@@ -70,12 +81,8 @@ class SuperheroViewController: UIViewController, UICollectionViewDataSource, UIC
         
         let movie = movies[indexPath.item]
         
-        if let posterPathString = movie["poster_path"] as? String {
-            let baseURLString = "https://image.tmdb.org/t/p/w500"
-            let posterURL = URL (string: baseURLString + posterPathString)!
-            cell.posterImageView.af_setImage(withURL: posterURL)
-            
-        }
+        let posterURL = movie.posterUrl
+        cell.posterImageView.af_setImage(withURL: posterURL!)
         
         return cell
     }
@@ -98,8 +105,13 @@ class SuperheroViewController: UIViewController, UICollectionViewDataSource, UIC
                 // TODO: Store the movies in a property to use elsewhere
                 // TODO: Reload your table view data
                 
-                let movies = dataDictionary["results"] as! [[String: Any]]
-                self.movies = movies
+                let mymovies = dataDictionary["results"] as! [[String:Any]]
+                
+                self.movies = []
+                for dictionary in mymovies {
+                    let movie = Movie(dictionary: dictionary)
+                    self.movies.append(movie)
+                }
                 
                 // Stop the activity indicator
                 // Hides automatically if "Hides When Stopped" is enabled
